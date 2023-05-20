@@ -36,15 +36,6 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
-@app.route('/user', methods=['GET'])
-def handle_hello():
-
-    response_body = {
-        "msg": "Hello, this is your GET /user response "
-    }
-
-    return jsonify(response_body), 200
-
 # # Create an API that connects to a database and implements the following Endpoints (very similar to SWAPI.dev or SWAPI.tech):
 
 # # [GET] /people Get a list of all the people in the database
@@ -61,7 +52,7 @@ def handle_people():
 # # [GET] /people/<int:people_id> Get a one single people information
 
 @app.route('/people/<int:people_id>', methods=['GET'])
-def handle_people():
+def handle_person():
 
     response_body = {
         "msg": "Hello, this is your GET /people/<int:people_id> response "
@@ -105,7 +96,7 @@ def handle_starships():
 # # [GET] /starships/<int:starship_id> Get one single starship information
 
 @app.route('/starships/<int:starship_id>', methods=['GET'])
-def handle_planet():
+def handle_starship():
 
     response_body = {
         "msg": "Hello, this is your GET /starships/<int:starship_id> response "
@@ -117,7 +108,7 @@ def handle_planet():
 
 # # [GET] /users Get a list of all the blog post users
 
-@app.route('/user', methods=['GET'])
+@app.route('/users', methods=['GET'])
 def handle_users():
 
     response_body = {
