@@ -8,7 +8,7 @@ class User(db.Model):
     last_name = db.Column(db.String(120), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(80), unique=False, nullable=False)
-    is_active = db.Column(db.Boolean(), unique=False, nullable=False)
+    is_active = db.Column(db.Boolean(), unique=False, nullable=True, default=True)
 
     def __repr__(self):
         return '<User %r>' % self.username
@@ -20,7 +20,8 @@ class User(db.Model):
             # do not serialize the password, its a security breach
         }
     
-class People():
+class People(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), unique=True, nullable=False)
     type = db.Column(db.String(80), unique=True, nullable=False)
 
@@ -29,11 +30,13 @@ class People():
 
     def serialize(self):
         return {
+            "id": self.id,
             "name": self.name,
             "type": self.type,
         }
 
-class Planets():
+class Planets(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), unique=True, nullable=False)
     type = db.Column(db.String(80), unique=True, nullable=False)
 
@@ -42,11 +45,13 @@ class Planets():
 
     def serialize(self):
         return {
+            "id": self.id,
             "name": self.name,
             "type": self.type,
         }
     
-class Starships():
+class Starships(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), unique=True, nullable=False)
     type = db.Column(db.String(80), unique=True, nullable=False)
 
@@ -55,11 +60,12 @@ class Starships():
 
     def serialize(self):
         return {
+            "id": self.id,
             "name": self.name,
             "type": self.type,
         }
     
-class Favorites():
+class Favorites(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("User"))
     people_name = db.Column(db.String(80), db.ForeignKey("People"))
