@@ -210,7 +210,7 @@ def create_favorite_planet(planet_name):
 def create_favorite_people(people_name):
 
     request_body_fav_person = request.get_json()
-    person_name = request_body_fav_person["people_name"]
+    people_name = request_body_fav_person["people_name"]
     favorite_id = request_body_fav_person["favorite_id"]
 
     fav_person = Favorites.query.filter_by(people_name= people_name, favorite_id= favorite_id)
