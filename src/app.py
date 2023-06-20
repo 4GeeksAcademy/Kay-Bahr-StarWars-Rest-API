@@ -3,6 +3,8 @@ This module takes care of starting the API Server, Loading the DB and Adding the
 """
 import os
 from flask import Flask, request, jsonify, url_for
+from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended.exceptions import NoAuthorizationError
 from flask_migrate import Migrate
 from flask_swagger import swagger
 from flask_cors import CORS
@@ -52,12 +54,10 @@ def handle_people():
 
 @app.route('/people/<int:people_id>', methods=['GET'])
 def handle_person(people_id):
-
     person = People.query.get(people_id)
     if person is None:
         raise APIException("User not found", status_code=404)
-
-    return jsonify(person), 200
+    return jsonify(person.serialize()), 200
 
 # # [GET] /planets Get a list of all the planets in the database
 
@@ -73,12 +73,10 @@ def handle_planets():
 
 @app.route('/planets/<int:planet_id>', methods=['GET'])
 def handle_planet(planet_id):
-
     planet = Planets.query.get(planet_id)
     if planet is None:
-        raise APIException("User not found", status_code=404)
-
-    return jsonify(planet), 200
+        raise APIException("Planet not found", status_code=404)
+    return jsonify(planet.serialize()), 200
 
 # # [GET] /starships Get a list of all the starships in the database
 
@@ -159,106 +157,114 @@ def delete_user(user_id):
 # # [GET] /users/favorites Get all the favorites that belong to the current user.
 
 @app.route('/users/favorites', methods=['GET'])
-def handle_favorites():
+def get_user_favorites():
+    user_id = request.args.get('user_id')
+    favorites = Favorites.query.filter_by(user_id=user_id).all()
+    serialized_favorites = [fav.serialize() for fav in favorites]
+    return jsonify(serialized_favorites), 200
 
-    favorites = Favorites.query.all()
-    all_favorites = list(map(lambda x: x.serialize(), favorites))
-
-    return jsonify(all_favorites), 200
 
 # # [POST] /favorite/starship/<int:starship_id> Add a new favorite starship to the current user with the starship id = starship_id.
 
 @app.route('/favorite/starship/<int:starship_id>', methods=['POST'])
-def create_favorite_starship(starship_name):
-
-    request_body_fav_star = request.get_json()
-    starship_name = request_body_fav_star["starship_name"]
-    favorite_id = request_body_fav_star["favorite_id"]
-
-    fav_star = Favorites.query.filter_by(starship_name= starship_name, favorite_id= favorite_id)
-    if fav_star is None:
-        fav_star = Favorites(starship_name= starship_name, favorite_id= favorite_id)
-        db.session.add()
-    else:
-        fav_star = request_body_fav_star[starship_name]
+def add_favorite_starship(starship_id):
+    user_id = get_current_user_id()
+    starship = Starships.query.get(starship_id)
+    
+    if not starship:
+        return jsonify({'message': 'Starship not found'}), 404
+    
+    favorite = Favorites(user_id=user_id, starship_id=starship_id)
+    db.session.add(favorite)
     db.session.commit()
+    
+    return jsonify({'message': 'Favorite starship added successfully'}), 201
 
-    return jsonify(fav_star), 200
 
 # # [POST] /favorite/planet/<int:planet_id> Add a new favorite planet to the current user with the planet id = planet_id.
 
 @app.route('/favorite/planet/<int:planet_id>', methods=['POST'])
-def create_favorite_planet(planet_name):
-
-    request_body_fav_planet = request.get_json()
-    planet_name = request_body_fav_planet["planet_name"]
-    favorite_id = request_body_fav_planet["favorite_id"]
-
-    fav_planet = Favorites.query.filter_by(planet_name= planet_name, favorite_id= favorite_id)
-    if fav_planet is None:
-        fav_planet = Favorites(planet_name= planet_name, favorite_id= favorite_id)
-        db.session.add()
-    else:
-        fav_planet = request_body_fav_planet[planet_name]
+def add_favorite_planet(planet_id):
+    user_id = get_current_user_id()
+    planet = Planets.query.get(planet_id)
+    
+    if not planet:
+        return jsonify({'message': 'Planet not found'}), 404
+    
+    favorite = Favorites(user_id=user_id, planet_id=planet_id)
+    db.session.add(favorite)
     db.session.commit()
+    
+    return jsonify({'message': 'Favorite planet added successfully'}), 201
 
-    return jsonify(fav_planet), 200
 
 # # [POST] /favorite/people/<int:people_id> Add new favorite people to the current user with the people id = people_id.
 
 @app.route('/favorite/people/<int:people_id>', methods=['POST'])
-def create_favorite_people(people_name):
-
-    request_body_fav_person = request.get_json()
-    people_name = request_body_fav_person["people_name"]
-    favorite_id = request_body_fav_person["favorite_id"]
-
-    fav_person = Favorites.query.filter_by(people_name= people_name, favorite_id= favorite_id)
-    if fav_person is None:
-        fav_person = Favorites(people_name= people_name, favorite_id= favorite_id)
-        db.session.add()
-    else:
-        fav_person = request_body_fav_person[people_name]
+def add_favorite_people(people_id):
+    user_id = get_current_user_id()
+    people = People.query.get(people_id)
+    
+    if not people:
+        return jsonify({'message': 'People not found'}), 404
+    
+    favorite = Favorites(user_id=user_id, people_id=people_id)
+    db.session.add(favorite)
     db.session.commit()
+    
+    return jsonify({'message': 'Favorite people added successfully'}), 201
 
-    return jsonify(fav_person), 200
 
 # # [DELETE] /favorite/planet/<int:planet_id> Delete favorite planet with the id = planet_id.
 
 @app.route('/favorite/planet/<int:planet_id>', methods=['DELETE'])
-def delete_favorite_planet(planet_name):
-
-    fav_planet = Favorites.query.get(planet_name)
-    if fav_planet is None:
-        raise APIException("Favorite planet not found", status_code=404)
-    db.session.delete(fav_planet)
+def delete_favorite_planet(planet_id):
+    user_id = get_current_user_id()
+    favorite = Favorites.query.filter_by(user_id=user_id, planet_id=planet_id).first()
+    
+    if not favorite:
+        return jsonify({'message': 'Favorite planet not found'}), 404
+    
+    db.session.delete(favorite)
     db.session.commit()
-
-    return jsonify("Favorite planet deletion successful"), 200
+    
+    return jsonify({'message': 'Favorite planet deleted successfully'}), 200
 
 # # [DELETE] /favorite/people/<int:people_id> Delete favorite people with the id = people_id.
 
 @app.route('/favorite/people/<int:people_id>', methods=['DELETE'])
-def delete_favorite_people(people_name):
-
-    fav_person = Favorites.query.get(people_name)
-    if fav_person is None:
-        raise APIException("Favorite person not found", status_code=404)
-    db.session.delete(fav_person)
+def delete_favorite_people(people_id):
+    user_id = get_current_user_id()  # Implement this function to get the current user ID
+    favorite = Favorites.query.filter_by(user_id=user_id, people_id=people_id).first()
+    
+    if not favorite:
+        return jsonify({'message': 'Favorite people not found'}), 404
+    
+    db.session.delete(favorite)
     db.session.commit()
-
-    return jsonify("Favorite person deletion successful"), 200
+    
+    return jsonify({'message': 'Favorite people deleted successfully'}), 200
 
 @app.route('/favorite/starship/<int:starship_id>', methods=['DELETE'])
-def delete_favorite_starship(starship_name):
-
-    fav_starship = Favorites.query.get(starship_name)
-    if fav_starship is None:
-        raise APIException("Favorite starship not found", status_code=404)
-    db.session.delete(fav_starship)
+def delete_favorite_starship(starship_id):
+    user_id = get_current_user_id()
+    favorite = Favorites.query.filter_by(user_id=user_id, starship_id=starship_id).first()
+    
+    if not favorite:
+        return jsonify({'message': 'Favorite starship not found'}), 404
+    
+    db.session.delete(favorite)
     db.session.commit()
+    
+    return jsonify({'message': 'Favorite starship deleted successfully'}), 200
 
-    return jsonify("Favorite starship deletion successful"), 200
+@app.route('/user/<int:user_id>', methods=['GET'])
+def get_current_user_id():
+    try:
+        current_user_id = get_jwt_identity()
+        return current_user_id
+    except NoAuthorizationError:
+        raise APIException("Authorization header is missing or invalid", status_code=401)
 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
