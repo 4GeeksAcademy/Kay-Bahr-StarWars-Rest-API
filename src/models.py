@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 class User(db.Model):
+    __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
     first_name = db.Column(db.String(120), nullable=False)
     last_name = db.Column(db.String(120), nullable=False)
@@ -21,6 +22,7 @@ class User(db.Model):
         }
     
 class People(db.Model):
+    __tablename__ = "people"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), unique=True, nullable=False)
     type = db.Column(db.String(80), unique=True, nullable=False)
@@ -36,6 +38,7 @@ class People(db.Model):
         }
 
 class Planets(db.Model):
+    __tablename__ = "planets"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), unique=True, nullable=False)
     type = db.Column(db.String(80), unique=True, nullable=False)
@@ -51,6 +54,7 @@ class Planets(db.Model):
         }
     
 class Starships(db.Model):
+    __tablename__ = "starships"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), unique=True, nullable=False)
     type = db.Column(db.String(80), unique=True, nullable=False)
@@ -66,11 +70,12 @@ class Starships(db.Model):
         }
     
 class Favorites(db.Model):
+    __tablename__ = "favorites"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("User"))
-    people_name = db.Column(db.String(80), db.ForeignKey("People"))
-    planets_name = db.Column(db.String(80), db.ForeignKey("Planets"))
-    starships_name = db.Column(db.String(80), db.ForeignKey("Starships"))
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    people_name = db.Column(db.String(80), db.ForeignKey("people.name"))
+    planets_name = db.Column(db.String(80), db.ForeignKey("planets.name"))
+    starships_name = db.Column(db.String(80), db.ForeignKey("starships.name"))
 
     def __repr__(self):
         return '<Favorites %r>' % self.id
